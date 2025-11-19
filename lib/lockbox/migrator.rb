@@ -40,28 +40,44 @@ module Lockbox
     def perform_attachments(attachments:, restart:)
       relation = base_relation
 
-      # eager load attachments
+      # eager load Active Storage attachments when available
       attachments.each_key do |k|
-        relation = relation.send("with_attached_#{k}")
+        method = "with_attached_#{k}"
+        relation = relation.send(method) if relation.respond_to?(method)
       end
 
       each_batch(relation) do |records|
         records.each do |record|
           attachments.each_key do |k|
             attachment = record.send(k)
-            if attachment.attached?
-              if attachment.is_a?(ActiveStorage::Attached::One)
-                unless attachment.metadata["encrypted"]
-                  attachment.rotate_encryption!
-                end
-              else
-                unless attachment.all? { |a| a.metadata["encrypted"] }
-                  attachment.rotate_encryption!
-                end
-              end
-            end
+            lockbox_migrate_attachment(attachment)
           end
         end
+      end
+    end
+
+    def lockbox_migrate_attachment(attachment)
+      if defined?(ActiveStorage)
+        case attachment
+        when ActiveStorage::Attached::One
+          if attachment.attached? && !attachment.metadata["encrypted"]
+            attachment.rotate_encryption!
+          end
+          return
+        when ActiveStorage::Attached::Many
+          if attachment.attached? && !attachment.all? { |a| a.metadata["encrypted"] }
+            attachment.rotate_encryption!
+          end
+          return
+        end
+      end
+
+      if defined?(Paperclip::Attachment) && attachment.is_a?(Paperclip::Attachment)
+        return unless attachment.exists?
+        if attachment.respond_to?(:lockbox_paperclip_migrating?) && attachment.lockbox_paperclip_migrating?
+          return if attachment.lockbox_encrypted_style?
+        end
+        attachment.rotate_encryption!
       end
     end
 

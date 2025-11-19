@@ -101,6 +101,14 @@ ActiveRecord::Schema.define do
     t.text :state
     t.text :state_ciphertext
     t.text :photo_data
+    t.string :paperclip_avatar_file_name
+    t.string :paperclip_avatar_content_type
+    t.integer :paperclip_avatar_file_size
+    t.datetime :paperclip_avatar_updated_at
+    t.string :paperclip_legacy_file_name
+    t.string :paperclip_legacy_content_type
+    t.integer :paperclip_legacy_file_size
+    t.datetime :paperclip_legacy_updated_at
   end
 
   create_table :posts do |t|

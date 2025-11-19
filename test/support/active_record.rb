@@ -25,6 +25,18 @@ class User < ActiveRecord::Base
     has_many_attached :images
   end
 
+  if defined?(Paperclip::Attachment)
+    has_attached_file :paperclip_avatar,
+      styles: {thumb: {geometry: "", format: nil}},
+      processors: [:noop]
+    encrypts_attached :paperclip_avatar
+    validates_attachment_content_type :paperclip_avatar, content_type: /\A.*\z/
+
+    has_attached_file :paperclip_legacy
+    encrypts_attached :paperclip_legacy, migrating: true
+    validates_attachment_content_type :paperclip_legacy, content_type: /\A.*\z/
+  end
+
   mount_uploader :document, DocumentUploader
   mount_uploaders :documents, DocumentUploader
   serialize :documents, coder: JSON

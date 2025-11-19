@@ -13,6 +13,7 @@ require_relative "lockbox/io"
 require_relative "lockbox/migrator"
 require_relative "lockbox/model"
 require_relative "lockbox/padding"
+require_relative "lockbox/paperclip_extensions"
 require_relative "lockbox/utils"
 require_relative "lockbox/version"
 
@@ -89,6 +90,7 @@ end
 # integrations
 require_relative "lockbox/carrier_wave_extensions" if defined?(CarrierWave)
 require_relative "lockbox/railtie" if defined?(Rails)
+Lockbox::PaperclipExtensions.attach! if defined?(Paperclip::Attachment)
 
 if defined?(ActiveSupport::LogSubscriber)
   require_relative "lockbox/log_subscriber"

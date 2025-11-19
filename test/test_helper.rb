@@ -2,6 +2,7 @@ require "bundler/setup"
 require "carrierwave"
 require "combustion"
 Bundler.require(:default)
+require "paperclip"
 require "minitest/autorun"
 
 $logger = ActiveSupport::Logger.new(ENV["VERBOSE"] ? STDOUT : nil)
@@ -11,6 +12,7 @@ def mongoid?
 end
 
 require_relative "support/carrierwave"
+require_relative "support/paperclip"
 require_relative "support/shrine"
 
 if mongoid?

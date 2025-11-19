@@ -23,6 +23,12 @@ module Lockbox
           prepend Lockbox::ActiveStorageExtensions::Blob
         end
       end
+
+      app.config.after_initialize do
+        next unless defined?(Paperclip::Attachment)
+        require "lockbox/paperclip_extensions"
+        Lockbox::PaperclipExtensions.attach!
+      end
     end
   end
 end
