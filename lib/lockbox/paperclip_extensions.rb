@@ -110,6 +110,14 @@ module Lockbox
 
       def lockbox_raw_data(style)
         style = style.to_sym
+        file_path = path(style) rescue nil
+        return File.binread(file_path) if file_path && File.exist?(file_path)
+
+        if respond_to?(:to_file)
+          file = to_file(style)
+          return lockbox_read_from_adapter(file) if file
+        end
+
         target = lockbox_style_target(style)
         adapter = Paperclip.io_adapters.for(target, @options[:adapter_options])
         lockbox_read_from_adapter(adapter)
@@ -118,11 +126,22 @@ module Lockbox
       def lockbox_read_from_adapter(adapter)
         return unless adapter
 
-        adapter.rewind if adapter.respond_to?(:rewind)
-        content = adapter.read
-        # Rewind again for other processors that might need to read the stream
-        adapter.rewind if adapter.respond_to?(:rewind)
-        content
+        file = adapter.respond_to?(:to_file) ? adapter.to_file : adapter
+
+        begin
+          file.rewind if file.respond_to?(:rewind)
+          content = file.read
+          # Rewind again for other processors that might need to read the stream
+          file.rewind if file.respond_to?(:rewind)
+          content
+        rescue IOError
+          # Some adapters expose a path even if the underlying IO is closed
+          if adapter.respond_to?(:path) && adapter.path
+            File.binread(adapter.path)
+          else
+            raise
+          end
+        end
       end
 
       def lockbox_build_box(options)

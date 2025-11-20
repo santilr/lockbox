@@ -13,6 +13,8 @@ Paperclip::Attachment.default_options.merge!(
 
 Paperclip.options[:log] = false
 
+require_relative "paperclip_memory_storage"
+
 module Paperclip
   class Noop < Processor
     def make

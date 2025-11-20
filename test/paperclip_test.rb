@@ -110,6 +110,37 @@ class PaperclipTest < Minitest::Test
     assert_equal "text/plain", user.paperclip_avatar_content_type
   end
 
+  def test_encrypt_remote_storage
+    with_memory_storage do
+      user = User.create!(paperclip_avatar: uploaded_file)
+
+      tempfile = user.paperclip_avatar.to_file
+      ciphertext = tempfile.read
+      tempfile.close!
+
+      refute_equal content, ciphertext
+      assert_equal content, user.paperclip_avatar.download
+    end
+  end
+
+  def test_rotate_remote_storage
+    with_memory_storage do
+      user = User.create!(paperclip_avatar: uploaded_file)
+      old_tempfile = user.paperclip_avatar.to_file
+      old_ciphertext = old_tempfile.read
+      old_tempfile.close!
+
+      user.paperclip_avatar.rotate_encryption!
+
+      new_tempfile = user.paperclip_avatar.to_file
+      new_ciphertext = new_tempfile.read
+      new_tempfile.close!
+
+      refute_equal old_ciphertext, new_ciphertext
+      assert_equal content, user.paperclip_avatar.download
+    end
+  end
+
   private
 
   def content
@@ -128,5 +159,14 @@ class PaperclipTest < Minitest::Test
     root = File.expand_path("tmp/paperclip", __dir__)
     FileUtils.rm_rf(root)
     FileUtils.mkdir_p(root)
+    Paperclip::Storage::Memory.clear_store if defined?(Paperclip::Storage::Memory)
+  end
+
+  def with_memory_storage
+    previous_storage = Paperclip::Attachment.default_options[:storage]
+    Paperclip::Attachment.default_options[:storage] = :memory
+    yield
+  ensure
+    Paperclip::Attachment.default_options[:storage] = previous_storage
   end
 end
